@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router";
 import Home from "./pages/home/Home";
 import Game from "./pages/game/Game";
-import './App.css';
 
 function App() {
 
