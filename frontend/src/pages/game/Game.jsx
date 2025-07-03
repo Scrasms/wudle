@@ -1,10 +1,21 @@
+import { useState, useEffect } from 'react';
+import { getWord } from '../../api/word';
 import './Game.css';
 
 function Game() {
+  const [word, setWord] = useState();
+
+  // Get new word
+  useEffect(() => {
+    const getTargetWord = async () => {
+      setWord(await getWord());
+    }
+    getTargetWord();
+  }, []);
 
   return (
     <>
-        Game
+        {word}
     </>
   );
 }
