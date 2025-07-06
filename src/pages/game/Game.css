@@ -1,13 +1,29 @@
+.grid-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    height: 100vh;
+    width: 100vw;
+}
+
+.grid-container:focus {
+    outline: none;
+}
+
 .row {
     display: flex;
-
+    width: fit-content;
 }
 
 .col {
     height: 40px;
     width: 40px;
-    background-color: white;
+
     border: 2px solid black;
+    background-color: white;
+    text-align: center;
 }
 
 .grid-text {

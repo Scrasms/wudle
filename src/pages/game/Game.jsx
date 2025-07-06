@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { differenceInCalendarDays } from 'date-fns';
 import wordObject from '../../assets/words.json';
 import './Game.css';
@@ -14,6 +14,8 @@ function Game() {
   const [currRow, setCurrRow] = useState(0);
   const [currCol, setCurrCol] = useState(0);
 
+  const gridContainerRef = useRef();
+
   // Get the solution for the day and generate grid on mounting
   useEffect(() => {
     const wordIndex = differenceInCalendarDays(new Date(), baseDate) % wordArray.length;
@@ -22,9 +24,14 @@ function Game() {
 
     // For a n-letter word, n + 1 guesses (rows)
     const emptyGrid = Array.from({ length: currSolution.length + 1 }, () =>
-      new Array(currSolution.length).fill(<div></div>)
+      new Array(currSolution.length).fill(null)
     );
     setGrid(emptyGrid);
+
+    // Focus the grid-container div on mount
+    if (gridContainerRef.current) {
+      gridContainerRef.current.focus();
+    }
   }, []);
 
   const handleKey = (event) => {
@@ -40,6 +47,7 @@ function Game() {
     let tempRow = currRow;
     let tempCol = currCol;
     if (event.key === 'Backspace') {
+      // Wrap col around on previous row
       if (currCol === 0) {
         if (currRow === 0) return;
         tempRow = currRow - 1;
@@ -62,7 +70,7 @@ function Game() {
     if (currRow === solution.length + 1 && currCol === 0) return;
 
     // Fill grid with user input
-    insertGrid(currRow, currCol, <div className='grid-text'>{event.key}</div>);
+    insertGrid(currRow, currCol, event.key);
 
     if (currCol === solution.length - 1) {
       setCurrRow(currRow + 1);
@@ -75,25 +83,33 @@ function Game() {
   // Inserts new element to the grid at specified row and col
   const insertGrid = (row, col, element) => {
     const newGrid = grid.map(row => [...row]);
-    newGrid[row][col] = <div className='grid-text'>{element}</div>;
+    newGrid[row][col] = element;
     setGrid(newGrid);
   }
 
   return (
     <>
-      <div className='grid'>
-        {grid.map((row, rowIndex) => (
-          <div className='row' key={rowIndex}>
-            {row.map((col, colIndex) => (
-              <div className='col' key={colIndex}>
-                {col}
-              </div>
-            ))}
-          </div>
-        ))}
+      {/*grid-container is always secretly focused
+      and covers whole page to capture keyboard input*/}
+      <div
+        className='grid-container'
+        ref={gridContainerRef}
+        tabIndex='0'
+        onKeyDown={handleKey}
+      >
+        <div className='grid'>
+          {grid.map((row, rowIndex) => (
+            <div className='row' key={rowIndex}>
+              {row.map((col, colIndex) => (
+                <div className='col' key={colIndex}>
+                  <div className='grid-text'>{col}</div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        <p>Solution: {solution}</p>
       </div>
-      <p>Solution: {solution}</p>
-      <input onKeyDown={handleKey} />
     </>
   );
 }
