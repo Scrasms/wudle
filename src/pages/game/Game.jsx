@@ -5,7 +5,8 @@ import './Game.css';
 
 const wordArray = Object.keys(wordObject);
 // Update this later to the date of deployment
-const baseDate = new Date('2025-07-04');
+// YYYY-MM-DD
+const baseDate = new Date('2024-07-06');
 
 function Game() {
   // USE LOCAL STORAGE TO SAVE USER STATE!!!!
@@ -35,56 +36,46 @@ function Game() {
   }, []);
 
   const handleKey = (event) => {
-    if (event.key === 'Backspace') {
-      clearGrid(event);
-    } else {
-      fillGrid(event);
+    switch (event.key) {
+      case 'Backspace':
+        clearGrid();
+        break;
+      case 'Enter':
+        console.log('Enter')
+        break;
+      default:
+        fillGrid(event.key);
     }
   }
 
   // Deletes last input from grid
-  const clearGrid = (event) => {
-    let tempRow = currRow;
-    let tempCol = currCol;
-    if (event.key === 'Backspace') {
-      // Wrap col around on previous row
-      if (currCol === 0) {
-        if (currRow === 0) return;
-        tempRow = currRow - 1;
-        tempCol = solution.length - 1;
-      } else {
-        tempCol = currCol - 1;
-      }
-      insertGrid(tempRow, tempCol, null);
-      setCurrRow(tempRow);
-      setCurrCol(tempCol);
-    }
+  const clearGrid = () => {
+    console.log(currCol);
+
+    if (currCol === 0) return;
+
+    insertGrid(currRow, currCol - 1, null);
+    setCurrCol(currCol => currCol - 1);
   }
 
   // Adds new input to grid
-  const fillGrid = (event) => {
+  const fillGrid = (key) => {
+    console.log(currCol);
+
     // Only letters are allowed
-    if (event.key.length !== 1 || !event.key.match(/[a-z]/i)) return;
+    if (key.length !== 1 || !key.match(/[a-z]/i) || currCol === solution.length) return;
 
-    // Do nothing if on last grid square
-    if (currRow === solution.length + 1 && currCol === 0) return;
-
-    // Fill grid with user input
-    insertGrid(currRow, currCol, event.key);
-
-    if (currCol === solution.length - 1) {
-      setCurrRow(currRow + 1);
-      setCurrCol(0);
-    } else {
-      setCurrCol(currCol + 1);
-    }
+    insertGrid(currRow, currCol, key);
+    setCurrCol(currCol => currCol + 1);
   }
 
-  // Inserts new element to the grid at specified row and col
-  const insertGrid = (row, col, element) => {
-    const newGrid = grid.map(row => [...row]);
-    newGrid[row][col] = element;
-    setGrid(newGrid);
+  // Inserts new letter to the grid at specified row and col
+  const insertGrid = (row, col, letter) => {
+    setGrid(grid => {
+      const newGrid = grid.map(row => [...row]);
+      newGrid[row][col] = letter;
+      return newGrid;
+    });
   }
 
   return (
