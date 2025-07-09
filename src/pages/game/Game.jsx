@@ -6,7 +6,7 @@ import './Game.css';
 const wordArray = Object.keys(wordObject);
 // Update this later to the date of deployment
 // YYYY-MM-DD
-const baseDate = new Date('2024-07-06');
+const baseDate = new Date('2025-07-09');
 
 function Game() {
   // USE LOCAL STORAGE TO SAVE USER STATE!!!!
@@ -25,7 +25,10 @@ function Game() {
 
     // For a n-letter word, n + 1 guesses (rows)
     const emptyGrid = Array.from({ length: currSolution.length + 1 }, () =>
-      new Array(currSolution.length).fill(null)
+      Array.from({length: currSolution.length}, () => ({
+        letter: null,
+        colour: 'none'
+      }))
     );
     setGrid(emptyGrid);
 
@@ -41,7 +44,8 @@ function Game() {
         clearGrid();
         break;
       case 'Enter':
-        console.log('Enter')
+        // Handle case where not enough letters are entered or guess word does not exist later
+        checkGuess();
         break;
       default:
         fillGrid(event.key);
@@ -50,8 +54,6 @@ function Game() {
 
   // Deletes last input from grid
   const clearGrid = () => {
-    console.log(currCol);
-
     if (currCol === 0) return;
 
     insertGrid(currRow, currCol - 1, null);
@@ -60,8 +62,6 @@ function Game() {
 
   // Adds new input to grid
   const fillGrid = (key) => {
-    console.log(currCol);
-
     // Only letters are allowed
     if (key.length !== 1 || !key.match(/[a-z]/i) || currCol === solution.length) return;
 
@@ -69,11 +69,52 @@ function Game() {
     setCurrCol(currCol => currCol + 1);
   }
 
-  // Inserts new letter to the grid at specified row and col
+  // Inserts new letter & colour object to the grid at specified row and col
   const insertGrid = (row, col, letter) => {
+    // Force rerender by calling setGrid
     setGrid(grid => {
       const newGrid = grid.map(row => [...row]);
-      newGrid[row][col] = letter;
+      newGrid[row][col].letter = letter;
+      return newGrid;
+    });
+  }
+
+  const checkGuess = () => {
+    const guess = grid[currRow];
+    const guessLen = guess.map((obj) => obj.letter).join("").length;
+
+    if (guessLen !== solution.length) {
+      // Replace with an alert component later
+      alert('Not enough letters!');
+      return;
+    }
+
+    // Green: letter present in solution and in correct position
+    // Yellow: letter present in solution
+    // Grey: letter not present in solution
+    for (const [i, obj] of guess.entries()) {
+      if (solution.charAt(i) === obj.letter) {
+        obj.colour = 'green';
+      } else if (solution.includes(obj.letter)) {
+        obj.colour = 'yellow';
+      } else {
+        obj.colour = 'grey';
+      }
+    }
+
+    // Move to next row after guess
+    if (currRow !== solution.length) {
+      setCurrRow(currRow => currRow + 1);
+      setCurrCol(0);
+    } else {
+      // Handle game completion logic here
+      alert('Game over');
+    }
+
+    // Trigger rerender for grid
+    setGrid(grid => {
+      const newGrid = grid.map(row => [...row]);
+      newGrid[currRow] = guess;
       return newGrid;
     });
   }
@@ -92,8 +133,8 @@ function Game() {
           {grid.map((row, rowIndex) => (
             <div className='row' key={rowIndex}>
               {row.map((col, colIndex) => (
-                <div className='col' key={colIndex}>
-                  <div className='grid-text'>{col}</div>
+                <div className={`col ${col.colour}`} key={colIndex}>
+                  <div className='grid-text'>{col.letter}</div>
                 </div>
               ))}
             </div>

@@ -29,3 +29,19 @@
 .grid-text {
     color: black;
 }
+
+.green {
+    background-color: greenyellow;
+}
+
+.yellow {
+    background-color: yellow;
+}
+
+.grey {
+    background-color: grey;
+}
+
+.none {
+    background-color: white;
+}
