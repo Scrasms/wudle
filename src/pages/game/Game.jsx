@@ -10,7 +10,6 @@ const wordArray = Object.keys(wordObject);
 const baseDate = new Date('2025-07-09');
 
 function Game() {
-  // USE LOCAL STORAGE TO SAVE USER STATE!!!!
   const [solution, setSolution] = useState();
   const [grid, setGrid] = useState([]);
   const [currRow, setCurrRow] = useState(0);
@@ -105,7 +104,7 @@ function Game() {
   const insertGrid = (row, col, letter) => {
     // Force rerender by calling setGrid
     setGrid(grid => {
-      const newGrid = grid.map(row => [...row]);
+      const newGrid = grid.map(r => [...r]);
       newGrid[row][col].letter = letter;
       return newGrid;
     });
