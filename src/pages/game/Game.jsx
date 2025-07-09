@@ -4,6 +4,7 @@ import wordObject from '../../assets/words.json';
 import './Game.css';
 
 const wordArray = Object.keys(wordObject);
+
 // Update this later to the date of deployment
 // YYYY-MM-DD
 const baseDate = new Date('2025-07-09');
@@ -14,37 +15,68 @@ function Game() {
   const [grid, setGrid] = useState([]);
   const [currRow, setCurrRow] = useState(0);
   const [currCol, setCurrCol] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
 
   const gridContainerRef = useRef();
 
   // Get the solution for the day and generate grid on mounting
   useEffect(() => {
-    const wordIndex = differenceInCalendarDays(new Date(), baseDate) % wordArray.length;
-    const currSolution = wordArray[wordIndex];
-    setSolution(currSolution);
+    const dayDiff = differenceInCalendarDays(new Date(), baseDate);
 
-    // For a n-letter word, n + 1 guesses (rows)
-    const emptyGrid = Array.from({ length: currSolution.length + 1 }, () =>
-      Array.from({length: currSolution.length}, () => ({
-        letter: null,
-        colour: 'none'
-      }))
-    );
-    setGrid(emptyGrid);
+    // Attempt to load old game state from local storage
+    const oldState = JSON.parse(localStorage.getItem(dayDiff));
+    if (oldState) {
+      setSolution(oldState.solution);
+      setGrid(oldState.grid);
+      setCurrRow(oldState.currRow);
+      setCurrCol(oldState.currCol);
+      setGameOver(oldState.gameOver);
 
+    } else {
+      const wordIndex = dayDiff % wordArray.length;
+      const currSolution = wordArray[wordIndex];
+      setSolution(currSolution);
+
+      // For a n-letter word, n + 1 guesses (rows)
+      const emptyGrid = Array.from({ length: currSolution.length + 1 }, () =>
+        Array.from({length: currSolution.length}, () => ({
+          letter: null,
+          colour: 'none'
+        }))
+      );
+      setGrid(emptyGrid);
+    }
     // Focus the grid-container div on mount
     if (gridContainerRef.current) {
       gridContainerRef.current.focus();
     }
   }, []);
 
+  // Save updated game state to local storage
+  useEffect(() => {
+    // Prevent game from being saved before anything has been initialised
+    if (!solution) return;
+
+    const key = differenceInCalendarDays(new Date(), baseDate);
+    const gameState = {
+      solution,
+      grid,
+      currRow,
+      currCol,
+      gameOver
+    };
+    localStorage.setItem(key, JSON.stringify(gameState));
+  }, [solution, grid, currRow, currCol, gameOver]);
+
   const handleKey = (event) => {
+    if (gameOver) return;
+
     switch (event.key) {
       case 'Backspace':
         clearGrid();
         break;
       case 'Enter':
-        // Handle case where not enough letters are entered or guess word does not exist later
+        // Handle case where guess word does not exist later
         checkGuess();
         break;
       default:
@@ -79,36 +111,65 @@ function Game() {
     });
   }
 
+  // Checks whether the current guess (row of letters) is correct
   const checkGuess = () => {
     const guess = grid[currRow];
-    const guessLen = guess.map((obj) => obj.letter).join("").length;
+    const guessStr = guess.map((obj) => obj.letter).join("");
 
-    if (guessLen !== solution.length) {
+    if (guessStr.length !== solution.length) {
       // Replace with an alert component later
       alert('Not enough letters!');
       return;
     }
 
+    // Counter to track num occurences of each letter in solution
+    const solCounter = new Map();
+    for (const letter of solution) {
+      if (solCounter.has(letter)) {
+        solCounter.set(letter, solCounter.get(letter) + 1);
+      } else {
+        solCounter.set(letter, 1);
+      }
+    }
+
     // Green: letter present in solution and in correct position
-    // Yellow: letter present in solution
-    // Grey: letter not present in solution
+    // Check for green first to give them counter decrement priority
     for (const [i, obj] of guess.entries()) {
       if (solution.charAt(i) === obj.letter) {
         obj.colour = 'green';
-      } else if (solution.includes(obj.letter)) {
+        solCounter.set(obj.letter, solCounter.get(obj.letter) - 1);
+      }
+    }
+
+    // Yellow: letter present in solution
+    // Grey: letter not present in solution
+    for (const obj of guess) {
+      if (obj.colour != 'none') continue;
+
+      // Only light up a letter as many times as it appears in the solution word
+      if (solution.includes(obj.letter) && solCounter.get(obj.letter) !== 0) {
         obj.colour = 'yellow';
+        solCounter.set(obj.letter, solCounter.get(obj.letter) - 1);
       } else {
         obj.colour = 'grey';
       }
     }
 
-    // Move to next row after guess
-    if (currRow !== solution.length) {
-      setCurrRow(currRow => currRow + 1);
-      setCurrCol(0);
+    // Validate guess against solution
+    if (guessStr === solution) {
+      setGameOver(true);
+      alert('You win!');
+
     } else {
-      // Handle game completion logic here
-      alert('Game over');
+      // Move to next row after guess
+      if (currRow !== solution.length) {
+        setCurrRow(currRow => currRow + 1);
+        setCurrCol(0);
+      } else {
+        // Handle all guesses used logic here
+        setGameOver(true);
+        alert('Game over');
+      }
     }
 
     // Trigger rerender for grid
@@ -140,7 +201,8 @@ function Game() {
             </div>
           ))}
         </div>
-        <p>Solution: {solution}</p>
+        {gameOver ? <p>game over, come back tomorrow :D</p> : null}
+        {/* <p>Solution: {solution}</p> */}
       </div>
     </>
   );
