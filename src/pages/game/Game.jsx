@@ -7,64 +7,43 @@ const wordArray = Object.keys(wordObject);
 
 // Update this later to the date of deployment
 // YYYY-MM-DD
-const baseDate = new Date('2025-07-09');
+const baseDate = new Date('2025-07-10');
 
 function Game() {
-  const [solution, setSolution] = useState();
-  const [grid, setGrid] = useState([]);
-  const [currRow, setCurrRow] = useState(0);
-  const [currCol, setCurrCol] = useState(0);
-  const [gameOver, setGameOver] = useState(false);
+  // Attempt to load old game state from local storage
+  const dayDiff = differenceInCalendarDays(new Date(), baseDate);
+  const oldState = JSON.parse(localStorage.getItem(dayDiff));
+
+  // Get the solution for the day and generate grid
+  const solution = oldState ? oldState.solution : wordArray[dayDiff % wordArray.length];
+
+  const [grid, setGrid] = useState(() => {
+    if (oldState) return oldState.grid;
+    // For a n-letter word, n + 1 guesses (rows)
+    const emptyGrid = Array.from({ length: solution.length + 1 }, () =>
+      Array.from({length: solution.length}, () => ({
+        letter: null,
+        colour: 'none'
+      }))
+    );
+    return emptyGrid;
+  });
+
+  const [currRow, setCurrRow] = useState(oldState ? oldState.currRow : 0);
+  const [currCol, setCurrCol] = useState(oldState ? oldState.currCol : 0);
+  const [gameOver, setGameOver] = useState(oldState ? oldState.gameOver : false);
 
   const gridContainerRef = useRef();
 
-  // Get the solution for the day and generate grid on mounting
   useEffect(() => {
-    const dayDiff = differenceInCalendarDays(new Date(), baseDate);
-
-    // Attempt to load old game state from local storage
-    const oldState = JSON.parse(localStorage.getItem(dayDiff));
-    if (oldState) {
-      setSolution(oldState.solution);
-      setGrid(oldState.grid);
-      setCurrRow(oldState.currRow);
-      setCurrCol(oldState.currCol);
-      setGameOver(oldState.gameOver);
-
-    } else {
-      const wordIndex = dayDiff % wordArray.length;
-      const currSolution = wordArray[wordIndex];
-      setSolution(currSolution);
-
-      // For a n-letter word, n + 1 guesses (rows)
-      const emptyGrid = Array.from({ length: currSolution.length + 1 }, () =>
-        Array.from({length: currSolution.length}, () => ({
-          letter: null,
-          colour: 'none'
-        }))
-      );
-      setGrid(emptyGrid);
-    }
     // Focus the grid-container div on mount
     if (gridContainerRef.current) {
       gridContainerRef.current.focus();
     }
   }, []);
 
-  // Save updated game state to local storage
   useEffect(() => {
-    // Prevent game from being saved before anything has been initialised
-    if (!solution) return;
-
-    const key = differenceInCalendarDays(new Date(), baseDate);
-    const gameState = {
-      solution,
-      grid,
-      currRow,
-      currCol,
-      gameOver
-    };
-    localStorage.setItem(key, JSON.stringify(gameState));
+    saveGameState();
   }, [solution, grid, currRow, currCol, gameOver]);
 
   const handleKey = (event) => {
@@ -81,6 +60,7 @@ function Game() {
       default:
         fillGrid(event.key);
     }
+    //saveGameState();
   }
 
   // Deletes last input from grid
@@ -112,7 +92,7 @@ function Game() {
 
   // Checks whether the current guess (row of letters) is correct
   const checkGuess = () => {
-    const guess = grid[currRow];
+    const guess = grid[currRow].map((cell) => ({ ...cell }));
     const guessStr = guess.map((obj) => obj.letter).join("");
 
     if (guessStr.length !== solution.length) {
@@ -179,6 +159,19 @@ function Game() {
     });
   }
 
+  // Save current game state to local storage
+  const saveGameState = () => {
+    const key = differenceInCalendarDays(new Date(), baseDate);
+    const gameState = {
+      solution,
+      grid,
+      currRow,
+      currCol,
+      gameOver
+    };
+    localStorage.setItem(key, JSON.stringify(gameState));
+  }
+
   return (
     <>
       {/*grid-container is always secretly focused
@@ -201,7 +194,7 @@ function Game() {
           ))}
         </div>
         {gameOver ? <p>game over, come back tomorrow :D</p> : null}
-        {/* <p>Solution: {solution}</p> */}
+        <p>Solution: {solution}</p>
       </div>
     </>
   );
