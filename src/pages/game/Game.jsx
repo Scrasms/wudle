@@ -7,7 +7,7 @@ const wordArray = Object.keys(wordObject);
 
 // Update this later to the date of deployment
 // YYYY-MM-DD
-const baseDate = new Date('2025-07-10');
+const baseDate = new Date('2025-08-29');
 
 function Game() {
   // Attempt to load old game state from local storage
@@ -194,7 +194,7 @@ function Game() {
           ))}
         </div>
         {gameOver ? <p>game over, come back tomorrow :D</p> : null}
-        <p>Solution: {solution}</p>
+        {gameOver ? <p>Solution: {solution}</p> : null}
       </div>
     </>
   );
